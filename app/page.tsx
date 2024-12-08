@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useDarkMode } from "../hooks/useDarkMode";
 import { Moon, Sun, Send, AlertCircle } from "lucide-react";
+import axios from "axios";
 
 interface WordAnalysis {
   word: string;
@@ -20,7 +20,42 @@ export default function Home() {
   const [sentence, setSentence] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
-  const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const darkModeMediaQuery = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    );
+    const storedPreference = localStorage.getItem("darkMode");
+
+    if (storedPreference !== null) {
+      setIsDarkMode(storedPreference === "true");
+    } else {
+      setIsDarkMode(darkModeMediaQuery.matches);
+    }
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsDarkMode(e.matches);
+      localStorage.setItem("darkMode", e.matches.toString());
+    };
+
+    darkModeMediaQuery.addEventListener("change", handleChange);
+
+    return () => darkModeMediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDarkMode]);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+    localStorage.setItem("darkMode", (!isDarkMode).toString());
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,34 +63,13 @@ export default function Home() {
     setApiResponse(null);
 
     try {
-      // TODO: Replace with actual API call
-      const response = await new Promise<ApiResponse>((resolve) =>
-        setTimeout(() => {
-          if (sentence.match(/^[\u0600-\u06FF\s]+$/)) {
-            resolve({
-              success: true,
-              output: [
-                {
-                  word: sentence.split(" ")[0],
-                  irab: "فعل ماضٍ مبني على الفتح",
-                },
-                {
-                  word: sentence.split(" ")[1],
-                  irab: "فاعل مرفوع وعلامة رفعه الضمة الظاهرة",
-                },
-              ],
-            });
-          } else {
-            resolve({
-              success: false,
-              error: "Input contains non-Arabic characters.",
-            });
-          }
-        }, 1000)
-      );
+      const { data } = await axios.post("http://localhost:3001/", {
+        sentence,
+      });
 
-      setApiResponse(response);
-    } catch (error) {
+      setApiResponse(data);
+    } catch (err) {
+      console.log(err);
       setApiResponse({
         success: false,
         error: "An error occurred while processing your request.",
@@ -66,12 +80,8 @@ export default function Home() {
   };
 
   return (
-    <div
-      className={`min-h-screen min-w-full bg-white dark:bg-gray-900 ${
-        isDarkMode ? "dark" : ""
-      }`}
-    >
-      <div className="container mx-auto px-4 py-8 transition-colors bg-white dark:bg-gray-900 duration-300 min-h-screen">
+    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
+      <div className="container mx-auto px-4 py-8">
         <nav className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-right text-gray-800 dark:text-white">
             محلل الجمل العربية
@@ -83,7 +93,7 @@ export default function Home() {
             {isDarkMode ? (
               <Sun className="text-yellow-400" />
             ) : (
-              <Moon className="text-gray-700" />
+              <Moon className="text-gray-700 dark:text-gray-300" />
             )}
           </button>
         </nav>
@@ -154,7 +164,7 @@ export default function Home() {
                         key={index}
                         className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg"
                       >
-                        <p className="text-lg font-semibold text-right mb-2 dark:text-white">
+                        <p className="text-lg font-semibold text-right mb-2 text-gray-800 dark:text-white">
                           {item.word}
                         </p>
                         <p className="text-gray-600 dark:text-gray-300 text-right">
