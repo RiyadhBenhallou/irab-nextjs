@@ -63,9 +63,12 @@ export default function Home() {
     setApiResponse(null);
 
     try {
-      const { data } = await axios.post("http://localhost:3001/", {
-        sentence,
-      });
+      const { data } = await axios.post(
+        process.env.NEXT_PUBLIC_API_URL as string,
+        {
+          sentence,
+        }
+      );
 
       setApiResponse(data);
     } catch (err) {
@@ -196,6 +199,11 @@ export default function Home() {
           <p>تأكد من إدخال نص عربي صحيح للحصول على أفضل النتائج</p>
         </motion.div>
       </div>
+      <footer className="mt-8 text-center text-gray-500 dark:text-gray-400">
+        <div className="inline-flex items-center">
+          <span className="mr-2">Made with ❤️ by: Riyadh Benhallou</span>
+        </div>
+      </footer>
     </div>
   );
 }
